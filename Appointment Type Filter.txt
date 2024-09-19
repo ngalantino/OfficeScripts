@@ -1,0 +1,52 @@
+/**
+ * This script filters the appointment schedule into each appointment type based on calendar name.
+ * https://learn.microsoft.com/en-us/javascript/api/office-scripts/excelscript/excelscript.filter?view=office-scripts
+ * https://www.reddit.com/r/excel/comments/15nd5hb/cant_get_a_script_to_copy_and_paste_only_visible/
+ */
+
+
+function main(workbook: ExcelScript.Workbook) {
+    
+    FilterSchedule(workbook, "*Internal*", "Internal Medicine");
+    FilterSchedule(workbook, "*Procedure*", "Procedure");
+
+
+}
+
+function FilterSchedule(workbook: ExcelScript.Workbook, filterCriteria: string, newSheetName: string) {
+    const table = workbook.getActiveWorksheet().getTables()[0];
+    let thisSheet = workbook.getActiveWorksheet();
+
+
+    // Get the filter for the "Calendar Name" table column.
+    const pageViewFilter: ExcelScript.Filter = table.getColumnByName("Calendar Name").getFilter();
+
+    // Filter Internal Medicine appointments and create new worksheet.
+    pageViewFilter.applyCustomFilter(filterCriteria);
+
+    let usedRange = thisSheet.getUsedRange();
+    let values = usedRange.getValues();
+
+    const source = table.getRange().getSpecialCells(ExcelScript.SpecialCellType.visible);
+
+    let sheetExists = workbook.getWorksheet(newSheetName);
+
+    if (sheetExists) {
+        let usedRange = sheetExists.getUsedRange();
+
+        if (usedRange) {
+            usedRange.clear();
+        }
+        sheetExists.getRange("A1").copyFrom(source, ExcelScript.RangeCopyType.all);
+
+    }
+
+    else {
+
+        let newSheet = workbook.addWorksheet(newSheetName);
+        newSheet.getRange("A1").copyFrom(source, ExcelScript.RangeCopyType.all);
+
+    }
+
+    pageViewFilter.clear();
+}
